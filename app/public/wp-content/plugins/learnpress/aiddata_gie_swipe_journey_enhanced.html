@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>The Port Evaluation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    :root {
+      --bg: #0a0f1e;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #10b981;
+      --dim: #1a1f2e;
+      
+      /* Chapter color themes */
+      --chapter-1: #10b981; /* The Setup - Green */
+      --chapter-2: #3b82f6; /* Method Selection - Blue */
+      --chapter-3: #8b5cf6; /* First Findings - Purple */
+      --chapter-4: #f59e0b; /* Pre-Analysis Planning - Amber */
+      --chapter-5: #ef4444; /* Confounder Control - Red */
+      --chapter-6: #06b6d4; /* Equity Analysis - Cyan */
+      --chapter-7: #ec4899; /* Final Chapter - Pink */
+      --chapter-8: #10b981; /* Journey Complete - Green */
+    }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      position: fixed;
+      width: 100%;
+      touch-action: pan-y;
+      transition: background-color 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Animated background gradient */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 60%);
+      opacity: 0.03;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+      z-index: 0;
+    }
+    
+    body.chapter-active::before {
+      opacity: 0.08;
+    }
+    
+    /* Progress bar */
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255,255,255,0.05);
+      z-index: 100;
+      overflow: hidden;
+    }
+    .progress::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 2s infinite;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      transform: translateX(-100%);
+      animation: progressShine 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+      to { transform: translateX(100%); }
+    }
+    
+    @keyframes progressShine {
+      to { transform: translateX(100%); }
+    }
+    
+    /* Score indicator */
+    .score {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.6s ease, color 1s ease, transform 0.3s ease;
+      z-index: 100;
+      text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+    .score.show {
+      opacity: 1;
+      animation: scoreFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes scoreFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    /* Main container */
+    .screen {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                  transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .screen.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .screen.exit-left {
+      animation: slideOutLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    .screen.exit-right {
+      animation: slideOutRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    
+    @keyframes slideOutLeft {
+      to {
+        opacity: 0;
+        transform: translateX(-100px) scale(0.9);
+      }
+    }
+    @keyframes slideOutRight {
+      to {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+      }
+    }
+    
+    .content {
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Typography */
+    .chapter {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+      position: relative;
+      transition: color 1s ease;
+    }
+    
+    .chapter::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      animation: expandLine 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+      transition: background-color 1s ease;
+    }
+    
+    @keyframes expandLine {
+      from {
+        width: 0;
+        opacity: 0;
+      }
+      to {
+        width: 40px;
+        opacity: 1;
+      }
+    }
+    
+    .title {
+      font-size: clamp(28px, 6vw, 56px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .title::first-line {
+      background: linear-gradient(135deg, var(--accent), var(--text));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: background 1s ease;
+    }
+    
+    .text {
+      font-size: clamp(18px, 3vw, 22px);
+      line-height: 1.6;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+    }
+    
+    .message {
+      background: var(--dim);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.05);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.8s ease;
+    }
+    
+    .message::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+      animation: messageShine 3s ease-in-out 0.8s;
+    }
+    
+    @keyframes messageShine {
+      to { left: 100%; }
+    }
+    
+    .message-from {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      transition: color 1s ease;
+      opacity: 0;
+      animation: fadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+    }
+    
+    .message-text {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text);
+      opacity: 0;
+      animation: fadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards;
+    }
+    
+    .question {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      line-height: 1.3;
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+      position: relative;
+    }
+    
+    .question::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+      animation: dotPulse 2s ease-in-out 0.6s infinite;
+      transition: background-color 1s ease;
+    }
+    
+    @keyframes dotPulse {
+      0%, 100% {
+        opacity: 0.3;
+        transform: translateX(-50%) scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.5);
+      }
+    }
+    
+    /* Choices */
+    .choice {
+      background: var(--dim);
+      border: 2px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      position: relative;
+      overflow: hidden;
+    }
+    .choice:nth-child(1) { animation-delay: 0.5s; }
+    .choice:nth-child(2) { animation-delay: 0.6s; }
+    .choice:nth-child(3) { animation-delay: 0.7s; }
+    
+    .choice::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+      transition: left 0.6s ease;
+    }
+    
+    .choice:hover::before {
+      left: 100%;
+    }
+    
+    .choice:hover {
+      border-color: var(--accent);
+      transform: scale(1.02) translateY(-2px);
+      background: rgba(16, 185, 129, 0.05);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3),
+                  0 0 0 1px var(--accent);
+    }
+    
+    .choice:active {
+      transform: scale(0.98);
+    }
+    
+    .choice-label {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 8px;
+      transition: color 0.3s ease;
+    }
+    
+    .choice:hover .choice-label {
+      color: var(--accent);
+    }
+    
+    .choice-hint {
+      font-size: 14px;
+      color: var(--muted);
+      font-style: italic;
+      transition: color 0.3s ease;
+    }
+    
+    .choice:hover .choice-hint {
+      color: var(--text);
+    }
+    
+    /* Feedback */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 10px 20px;
+      border-radius: 999px;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: scaleIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s forwards;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .badge::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translate(-50%, -50%);
+      animation: badgeRipple 1s ease-out 0.5s;
+    }
+    
+    @keyframes badgeRipple {
+      to {
+        width: 200px;
+        height: 200px;
+        opacity: 0;
+      }
+    }
+    
+    .badge.strong {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+    .badge.weak {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+    .badge.moderate {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 2px solid #f59e0b;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    }
+    
+    .signal-display {
+      font-size: 72px;
+      font-weight: 900;
+      margin: 32px 0;
+      opacity: 0;
+      animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s forwards;
+      position: relative;
+    }
+    
+    .signal-display::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: signalPulse 2s ease-out 0.8s infinite;
+      pointer-events: none;
+    }
+    
+    .signal-display.positive {
+      color: var(--accent);
+      text-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+    }
+    .signal-display.positive::after {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    
+    .signal-display.negative {
+      color: #ef4444;
+      text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    }
+    .signal-display.negative::after {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    
+    @keyframes signalPulse {
+      0% {
+        box-shadow: 0 0 0 0 currentColor;
+        opacity: 0.7;
+      }
+      70% {
+        box-shadow: 0 0 0 30px currentColor;
+        opacity: 0;
+      }
+      100% {
+        box-shadow: 0 0 0 0 currentColor;
+        opacity: 0;
+      }
+    }
+    
+    .feedback-text {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
+    }
+    
+    /* Report */
+    .report-score {
+      font-size: clamp(80px, 15vw, 120px);
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      margin: 40px 0;
+      opacity: 0;
+      animation: reportScoreIn 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s forwards;
+      position: relative;
+      text-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+    }
+    
+    @keyframes reportScoreIn {
+      from {
+        opacity: 0;
+        transform: scale(0.5) rotate(-10deg);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+    }
+    
+    .report-label {
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      font-weight: 700;
+      opacity: 0;
+      animation: fadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) 0.8s forwards;
+    }
+    
+    /* Navigation */
+    .nav-hint {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .nav-hint.hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+      pointer-events: none;
+    }
+    
+    .next-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 16px 32px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .next-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    
+    .next-btn:active {
+      transform: translateY(0);
+    }
+    
+    .arrow {
+      width: 20px;
+      height: 20px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+    
+    .next-btn:hover .arrow {
+      transform: translateX(4px);
+    }
+    
+    .arrow::before,
+    .arrow::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 2px;
+      background: currentColor;
+      right: 0;
+      transition: all 0.3s ease;
+    }
+    .arrow::before {
+      top: 6px;
+      transform: rotate(45deg);
+      transform-origin: right;
+    }
+    .arrow::after {
+      bottom: 6px;
+      transform: rotate(-45deg);
+      transform-origin: right;
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Responsive */
+    @media (max-width: 640px) {
+      .screen {
+        padding: 32px 20px;
+      }
+      .choice {
+        padding: 20px 18px;
+      }
+      .message {
+        padding: 24px;
+      }
+    }
+    
+    /* Chapter-specific background accents */
+    .chapter-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+    
+    .chapter-overlay.active {
+      opacity: 1;
+    }
+    
+    .chapter-overlay::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 800px;
+      height: 800px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+      opacity: 0.08;
+      animation: float 20s ease-in-out infinite;
+    }
+    
+    .chapter-overlay::after {
+      content: '';
+      position: absolute;
+      bottom: -50%;
+      left: -20%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+      opacity: 0.05;
+      animation: float 25s ease-in-out infinite reverse;
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) scale(1);
+      }
+      33% {
+        transform: translate(30px, -30px) scale(1.1);
+      }
+      66% {
+        transform: translate(-20px, 20px) scale(0.9);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  
+  <div class="score" id="scoreDisplay">0</div>
+  
+  <div class="chapter-overlay" id="chapterOverlay"></div>
+  
+  <div id="app"></div>
+  
+  <div class="nav-hint hidden" id="nextIndicator">
+    <button class="next-btn" id="nextBtn">
+      <span id="nextLabel">Continue</span>
+      <div class="arrow"></div>
+    </button>
+  </div>
+
+  <script>
+    const BEATS = [
+      // Introduction
+      { type: 'title', chapter: 'The Setup', text: 'Six Months Ago', chapterIndex: 1 },
+      { type: 'text', text: 'A country in West Africa announces a massive new port built with Chinese financing.' },
+      { type: 'text', text: 'Your research team is asked to evaluate its economic impact using satellite nighttime lights.' },
+      { type: 'text', text: 'Sounds straightforward.' },
+      { type: 'text', text: 'But every decision you make will ripple through your findings.' },
+      
+      // Choice 1: Method
+      { type: 'title', chapter: 'Method Selection', text: 'Choosing Your Approach', chapterIndex: 2 },
+      {
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "We need to decide fast. Funding depends on demonstrating rigor. What method should we use?"
+      },
+      {
+        type: 'question',
+        text: 'How will you design the evaluation?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Difference-in-differences with matched controls based on pre-treatment characteristics.',
+            hint: 'Gold standard',
+            delta: 2,
+            badge: 'strong',
+            why: 'DiD with matched controls approximates random assignment. It isolates causal effects and makes assumptions transparent. This is what rigorous evaluation looks like.'
+          },
+          {
+            label: 'Simple before-after comparison within the affected region.',
+            hint: 'Quick and easy',
+            delta: -1,
+            badge: 'weak',
+            why: 'Before-after conflates the port effect with everything else happening over time. No counterfactual, no credibility.'
+          },
+          {
+            label: 'Descriptive maps showing nightlight trends, no formal comparison.',
+            hint: 'Visual storytelling',
+            delta: -2,
+            badge: 'weak',
+            why: 'Maps without statistical inference offer no evidence of impact. Pretty pictures do not equal evaluation.'
+          }
+        ]
+      },
+      
+      // Choice 2: First findings
+      { type: 'title', chapter: 'First Findings', text: 'The Data Speaks', chapterIndex: 3 },
+      { type: 'text', text: 'You run the numbers.' },
+      { type: 'text', text: 'Nightlights increased 18% near the port compared to controls.' },
+      { type: 'text', text: 'Statistically significant. Clear effect.' },
+      { type: 'text', text: 'But is it real?' },
+      {
+        type: 'message',
+        from: 'Dr. James Okoro, Local Economist',
+        text: "This looks impressive, but the timing worries me. A new oil refinery opened nearby the same year. Could that be driving the lights?"
+      },
+      {
+        type: 'question',
+        text: 'What do you do?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Acknowledge and test: Run robustness checks excluding areas near the refinery. Report sensitivity.',
+            hint: 'Transparent rigor',
+            delta: 2,
+            badge: 'strong',
+            why: 'Ignoring confounders destroys credibility. Testing sensitivity shows you take threats seriously. This is what honest science looks like.'
+          },
+          {
+            label: 'Assume the refinery effect is negligible and proceed without adjustment.',
+            hint: 'Simplifying assumption',
+            delta: -1,
+            badge: 'weak',
+            why: 'Hoping confounders away is not a strategy. Major infrastructure changes demand explicit consideration.'
+          },
+          {
+            label: 'Avoid mentioning the refinery to keep the narrative clean.',
+            hint: 'Streamlined story',
+            delta: -2,
+            badge: 'weak',
+            why: 'Withholding known threats to validity is academic malpractice. Evaluations must report what threatens findings, not hide it.'
+          }
+        ]
+      },
+      
+      // Choice 3: Pre-Analysis Plan
+      { type: 'title', chapter: 'Pre-Analysis Planning', text: 'Getting Ahead of Yourself', chapterIndex: 4 },
+      { type: 'text', text: 'A month in, you realize the project scope is expanding.' },
+      { type: 'text', text: 'Multiple stakeholders want different answers.' },
+      { type: 'text', text: 'The temptation to explore is strong.' },
+      {
+        type: 'message',
+        from: 'Policy Advisor',
+        text: "Can we test whether the port boosted manufacturing? Or services? Or maybe just check which districts benefited most? Let's see what the data shows."
+      },
+      {
+        type: 'question',
+        text: 'How do you respond?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Draft a pre-analysis plan specifying hypotheses and methods before running new tests.',
+            hint: 'Disciplined approach',
+            delta: 2,
+            badge: 'strong',
+            why: 'Pre-specification prevents p-hacking and clarifies what\'s confirmatory vs. exploratory. Transparency earns trust.'
+          },
+          {
+            label: 'Run exploratory analyses but clearly label them as hypothesis-generating in the report.',
+            hint: 'Balanced transparency',
+            delta: 1,
+            badge: 'moderate',
+            why: 'Better than silent exploration, but less protective against bias than pre-specification. Acceptable compromise if labeled honestly.'
+          },
+          {
+            label: 'Test everything and report only significant results without distinguishing planned vs. exploratory analyses.',
+            hint: 'Flexibility',
+            delta: -2,
+            badge: 'weak',
+            why: 'This is textbook p-hacking. Results look stronger than warranted, and credibility collapses under scrutiny.'
+          }
+        ]
+      },
+      
+      // Choice 4: Confounder control
+      { type: 'title', chapter: 'Confounder Control', text: 'What Else Matters?', chapterIndex: 5 },
+      { type: 'text', text: 'Your results hold up in initial robustness checks.' },
+      { type: 'text', text: 'But a peer reviewer raises a new concern.' },
+      {
+        type: 'message',
+        from: 'Anonymous Reviewer #2',
+        text: "Did you control for roads? Ports don't operate in isolation. If new roads were built simultaneously, your estimate conflates port and road effects."
+      },
+      {
+        type: 'question',
+        text: 'What do you do?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Obtain road data, model distance to road improvements, and test if results change when controlling for road access.',
+            hint: 'Comprehensive control',
+            delta: 2,
+            badge: 'strong',
+            why: 'Infrastructure projects cluster. Disentangling effects requires controlling for complementary investments. This is rigorous evaluation.'
+          },
+          {
+            label: 'Acknowledge roads as a limitation in the discussion but argue data constraints prevent formal testing.',
+            hint: 'Honest limitation',
+            delta: 0,
+            badge: 'moderate',
+            why: 'Better than ignoring it, but leaves a known confounder unaddressed. Undermines confidence in the estimate.'
+          },
+          {
+            label: 'Dismiss the concern as beyond scope. Argue the port is the \'primary\' intervention.',
+            hint: 'Narrow framing',
+            delta: -1,
+            badge: 'weak',
+            why: 'Declaring something beyond scope doesn\'t make it irrelevant. Reviewers and users will rightly question the findings.'
+          }
+        ]
+      },
+      
+      // Choice 5: Equity
+      { type: 'title', chapter: 'Equity Analysis', text: 'Who Benefits?', chapterIndex: 6 },
+      { type: 'text', text: 'Aggregate results show positive effects.' },
+      { type: 'text', text: 'But averages can hide inequality.' },
+      {
+        type: 'message',
+        from: 'Civil Society Leader',
+        text: "Your report says the port helped the region. But my community, right next to the port, saw no improvement. Who actually benefited?"
+      },
+      {
+        type: 'question',
+        text: 'How do you address distributional effects?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Full disaggregation: Report effects by settlement type and wealth. Flag if only affluent areas benefit.',
+            hint: 'Comprehensive equity lens',
+            delta: 2,
+            badge: 'strong',
+            why: "Disaggregation surfaces inequality that aggregates hide. If only wealthy areas benefit, that's critical for policy. This is what rigorous evaluation looks like."
+          },
+          {
+            label: "Report aggregates with brief mention of 'potential heterogeneity' in limitations, without testing.",
+            hint: 'Superficial nod',
+            delta: 0,
+            badge: 'moderate',
+            why: 'Better than nothing, but leaves stakeholders guessing about equity. Minimal due diligence.'
+          },
+          {
+            label: "Stick to aggregates only. Claim distributional analysis is beyond scope since satellites don't measure income.",
+            hint: 'Missed opportunity',
+            delta: -1,
+            badge: 'weak',
+            why: 'Satellites can proxy wealth and urbanization. Dismissing equity analysis shirks professional responsibility.'
+          }
+        ]
+      },
+
+      // Final
+      { type: 'title', chapter: 'Final Chapter', text: 'Six Months Later', chapterIndex: 7 },
+      { type: 'text', text: "You're reviewing the final draft." },
+      { type: 'text', text: 'The work is done, but one question remains:' },
+      { type: 'text', text: 'What happens next?' },
+      {
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "This is strong work. But what's our recommendation for follow-up? Ground validation? Replication materials? Or do we just ship it and move on?"
+      },
+      {
+        type: 'question',
+        text: 'What do you recommend?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Recommend follow-on: Ground validation, replication materials registration, GeoQuery integration for reusable extraction.',
+            hint: 'Building infrastructure',
+            delta: 2,
+            badge: 'strong',
+            why: "Follow-ons deepen credibility and enable learning. Standardized extraction supports iteration. You're building research infrastructure, not just a report."
+          },
+          {
+            label: 'Declare results final and discourage replication to protect the narrative.',
+            hint: 'Short-term thinking',
+            delta: -2,
+            badge: 'weak',
+            why: 'Discouraging replication is antithetical to science. Signals insecurity about methods. Actively harms research credibility.'
+          },
+          {
+            label: "No next steps needed. We used satellites, so it's already modern enough.",
+            hint: 'Complacency',
+            delta: -1,
+            badge: 'weak',
+            why: 'Technology ≠ rigor. There are always improvements possible. Declaring premature victory limits learning.'
+          }
+        ]
+      },
+
+      // Report
+      { type: 'title', chapter: 'Journey Complete', text: 'Your Signal Score', chapterIndex: 8 },
+      { type: 'report' }
+    ];
+
+    let currentBeat = 0;
+    let score = 0;
+    let decisionCount = 0;
+    const totalDecisions = 7;
+    let selectedChoices = [];
+    let awaitingChoice = false;
+    let currentChapter = 1;
+
+    const chapterColors = {
+      1: '#10b981',
+      2: '#3b82f6',
+      3: '#8b5cf6',
+      4: '#f59e0b',
+      5: '#ef4444',
+      6: '#06b6d4',
+      7: '#ec4899',
+      8: '#10b981'
+    };
+
+    function setChapterTheme(chapterIndex) {
+      if (chapterIndex && chapterColors[chapterIndex]) {
+        currentChapter = chapterIndex;
+        const color = chapterColors[chapterIndex];
+        document.documentElement.style.setProperty('--accent', color);
+        document.body.classList.add('chapter-active');
+        
+        setTimeout(() => {
+          document.body.classList.remove('chapter-active');
+        }, 1000);
+      }
+    }
+
+    function updateProgress() {
+      const progress = (decisionCount / totalDecisions) * 100;
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('scoreDisplay').textContent = score;
+      if (decisionCount > 0) {
+        document.getElementById('scoreDisplay').classList.add('show');
+      }
+    }
+
+    function renderBeat() {
+      const beat = BEATS[currentBeat];
+      const app = document.getElementById('app');
+      const nextIndicator = document.getElementById('nextIndicator');
+      const nextLabel = document.getElementById('nextLabel');
+      const chapterOverlay = document.getElementById('chapterOverlay');
+      
+      // Set chapter theme if specified
+      if (beat.chapterIndex) {
+        setChapterTheme(beat.chapterIndex);
+        chapterOverlay.classList.add('active');
+      } else {
+        chapterOverlay.classList.remove('active');
+      }
+      
+      // Clear previous
+      app.innerHTML = '';
+      
+      // Create screen
+      const screen = document.createElement('div');
+      screen.className = 'screen';
+      
+      const content = document.createElement('div');
+      content.className = 'content';
+      
+      if (beat.type === 'title') {
+        content.innerHTML = `
+          <div class="chapter">${beat.chapter}</div>
+          <h1 class="title">${beat.text}</h1>
+        `;
+        nextLabel.textContent = 'Continue';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'text') {
+        content.innerHTML = `<p class="text">${beat.text}</p>`;
+        nextLabel.textContent = 'Next';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'message') {
+        content.innerHTML = `
+          <div class="message">
+            <div class="message-from">${beat.from}</div>
+            <div class="message-text">${beat.text}</div>
+          </div>
+        `;
+        nextLabel.textContent = 'Continue';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'question') {
+        content.innerHTML = `<div class="question">${beat.text}</div>`;
+        nextLabel.textContent = 'See Options';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'choices') {
+        awaitingChoice = true;
+        beat.choices.forEach((choice, idx) => {
+          const choiceEl = document.createElement('div');
+          choiceEl.className = 'choice';
+          choiceEl.innerHTML = `
+            <div class="choice-label">${choice.label}</div>
+            <div class="choice-hint">${choice.hint}</div>
+          `;
+          choiceEl.onclick = () => selectChoice(idx, beat.choices);
+          content.appendChild(choiceEl);
+        });
+        nextIndicator.classList.add('hidden');
+      }
+      else if (beat.type === 'report') {
+        content.innerHTML = `
+          <div class="report-score">${score}</div>
+          <div class="report-label">Decision Quality Signal</div>
+        `;
+        nextLabel.textContent = 'Restart Journey';
+        nextIndicator.classList.remove('hidden');
+      }
+      
+      screen.appendChild(content);
+      app.appendChild(screen);
+      
+      // Trigger animation
+      setTimeout(() => screen.classList.add('active'), 50);
+    }
+
+    function selectChoice(idx, choices) {
+      if (!awaitingChoice) return;
+      awaitingChoice = false;
+      
+      const choice = choices[idx];
+      score += choice.delta;
+      decisionCount++;
+      selectedChoices.push(choice);
+      updateProgress();
+      
+      // Disable other choices
+      const choiceEls = document.querySelectorAll('.choice');
+      choiceEls.forEach((el, i) => {
+        if (i !== idx) {
+          el.style.opacity = '0.3';
+          el.style.pointerEvents = 'none';
+        }
+      });
+      
+      // Show feedback on next beat
+      currentBeat++;
+      setTimeout(() => {
+        const app = document.getElementById('app');
+        const screen = document.querySelector('.screen');
+        if (screen) screen.classList.add('exit-left');
+        
+        setTimeout(() => {
+          app.innerHTML = '';
+          
+          const feedbackScreen = document.createElement('div');
+          feedbackScreen.className = 'screen';
+          
+          const content = document.createElement('div');
+          content.className = 'content';
+          
+          const signalClass = choice.delta >= 0 ? 'positive' : 'negative';
+          const signalText = choice.delta >= 0 ? `+${choice.delta}` : choice.delta;
+          
+          content.innerHTML = `
+            <div class="badge ${choice.badge}">${choice.badge} decision</div>
+            <div class="signal-display ${signalClass}">${signalText}</div>
+            <p class="feedback-text">${choice.why}</p>
+          `;
+          
+          feedbackScreen.appendChild(content);
+          app.appendChild(feedbackScreen);
+          
+          setTimeout(() => feedbackScreen.classList.add('active'), 50);
+          
+          document.getElementById('nextLabel').textContent = 'Continue';
+          document.getElementById('nextIndicator').classList.remove('hidden');
+        }, 600);
+      }, 800);
+    }
+
+    function nextBeat() {
+      const screen = document.querySelector('.screen');
+      if (!screen) return;
+      
+      screen.classList.add('exit-left');
+      document.getElementById('nextIndicator').classList.add('hidden');
+      
+      setTimeout(() => {
+        currentBeat++;
+        if (currentBeat >= BEATS.length) {
+          // Restart
+          currentBeat = 0;
+          score = 0;
+          decisionCount = 0;
+          selectedChoices = [];
+          updateProgress();
+        }
+        renderBeat();
+      }, 600);
+    }
+
+    document.getElementById('nextBtn').onclick = nextBeat;
+    
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        if (!awaitingChoice && !document.getElementById('nextIndicator').classList.contains('hidden')) {
+          nextBeat();
+        }
+      }
+    });
+    
+    // Touch swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) {
+        // Swipe left
+        if (!awaitingChoice && !document.getElementById('nextIndicator').classList.contains('hidden')) {
+          nextBeat();
+        }
+      }
+    });
+
+    updateProgress();
+    renderBeat();
+  </script>
+</body>
+</html>

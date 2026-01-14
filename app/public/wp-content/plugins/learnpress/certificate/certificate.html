@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AidData Course Certificate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #115740;
+            --primary-dark: #0a3b2b;
+            --accent-color: #1a805f;
+            --accent-light: #2ea384;
+            --gold: #d4af37;
+            --gold-light: #f2e9af;
+            --dark-text: #111111;
+            --light-text: #555555;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            --gradient-gold: linear-gradient(135deg, var(--gold), #f8e08e);
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 6px;
+            border: 3px solid #f5f5f5;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            color: var(--dark-text);
+            letter-spacing: -0.02em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            box-sizing: border-box;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(17, 87, 64, 0.03) 0%, transparent 150px),
+                radial-gradient(circle at 70% 60%, rgba(212, 175, 55, 0.03) 0%, transparent 150px);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+            }
+
+            .certificate-container {
+                width: 297mm; /* A4 landscape width */
+                height: 210mm; /* A4 landscape height */
+                margin: 0 auto;
+                padding: 0;
+                box-shadow: none;
+                page-break-inside: avoid;
+                overflow: hidden;
+            }
+
+            .certificate {
+                padding: 30px 40px;
+                margin: 0;
+                box-shadow: none;
+                page-break-inside: avoid;
+                width: calc(100% - 60px); /* Account for padding */
+                height: calc(100% - 60px); /* Account for padding */
+            }
+
+            .controls {
+                display: none;
+            }
+            
+            .certificate-id {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+
+        .certificate-container {
+            width: 297mm; /* A4 landscape width */
+            height: 210mm; /* A4 landscape height */
+            position: relative;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        .certificate {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            width: calc(100% - 80px); /* Account for padding */
+            height: calc(100% - 80px); /* Account for padding */
+            box-sizing: border-box;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(17, 87, 64, 0.02) 0%, transparent 200px),
+                radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.02) 0%, transparent 200px);
+        }
+
+        .border-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 15px solid transparent;
+            border-image: var(--gradient-primary) 1;
+            pointer-events: none;
+            opacity: 0.8;
+            box-shadow: inset 0 0 20px rgba(17, 87, 64, 0.1);
+        }
+        
+        .corner {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+        }
+        
+        .corner-tl {
+            top: 20px;
+            left: 20px;
+            border-top: 3px solid var(--gold);
+            border-left: 3px solid var(--gold);
+            border-radius: 10px 0 0 0;
+        }
+        
+        .corner-tr {
+            top: 20px;
+            right: 20px;
+            border-top: 3px solid var(--gold);
+            border-right: 3px solid var(--gold);
+            border-radius: 0 10px 0 0;
+        }
+        
+        .corner-bl {
+            bottom: 20px;
+            left: 20px;
+            border-bottom: 3px solid var(--gold);
+            border-left: 3px solid var(--gold);
+            border-radius: 0 0 0 10px;
+        }
+        
+        .corner-br {
+            bottom: 20px;
+            right: 20px;
+            border-bottom: 3px solid var(--gold);
+            border-right: 3px solid var(--gold);
+            border-radius: 0 0 10px 0;
+        }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            opacity: 0.04;
+            font-size: 150px;
+            font-weight: bold;
+            color: var(--primary-color);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .logo {
+            max-width: 200px;
+            margin-bottom: 25px;
+            margin-top: 25px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+
+        .certificate-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 40px;
+            color: var(--primary-color);
+            margin: 12px 0;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .certificate-subtitle {
+            font-size: 16px;
+            color: var(--light-text);
+            margin-bottom: 15px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .recipient-section {
+            text-align: center;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .recipient-title {
+            font-size: 20px;
+            color: var(--light-text);
+            margin-bottom: 15px;
+            font-weight: 400;
+        }
+
+        .recipient-name {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+            letter-spacing: 1px;
+            position: relative;
+            display: inline-block;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .recipient-name::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .certificate-text {
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.8;
+            color: var(--dark-text);
+            margin: 30px 0;
+            padding: 0 30px;
+        }
+
+        .completion-date {
+            text-align: center;
+            font-size: 16px;
+            color: var(--light-text);
+            margin: 30px 0;
+            font-weight: 500;
+        }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            position: relative;
+            padding: 0 30px;
+        }
+
+        .signature {
+            text-align: center;
+            width: 45%;
+        }
+
+        .signature-line {
+            width: 80%;
+            height: 1px;
+            background: var(--gradient-primary);
+            margin: 10px auto;
+            position: relative;
+        }
+
+        .signature-line::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+            transform: scaleX(0.7);
+            opacity: 0.7;
+        }
+
+        .signature-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark-text);
+            margin-top: 10px;
+        }
+
+        .signature-title {
+            font-size: 12px;
+            color: var(--light-text);
+            margin-top: 5px;
+        }
+
+        .certificate-footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: var(--light-text);
+            padding: 0 30px;
+            position: relative;
+        }
+
+        .certificate-id {
+            font-size: 14px;
+            color: var(--primary-dark);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-top: 20px;
+            display: block;
+            background-color: rgba(17, 87, 64, 0.05);
+            padding: 4px 12px;
+            border-radius: 4px;
+            width: max-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 5px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all var(--transition-speed);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(17, 87, 64, 0.15);
+        }
+
+        input {
+            padding: 10px 16px;
+            margin-right: 10px;
+            border: 1px solid rgba(17, 87, 64, 0.2);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            width: 250px;
+            transition: all var(--transition-speed);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(17, 87, 64, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-label {
+            display: inline-block;
+            width: 120px;
+            text-align: right;
+            margin-right: 15px;
+            color: var(--dark-text);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        /* Floating shapes animation */
+        .shape {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(17, 87, 64, 0.05), rgba(26, 128, 95, 0.08));
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            animation: morphShape 15s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+            animation-delay: -2s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -4s;
+        }
+        
+        .shape-3 {
+            width: 160px;
+            height: 160px;
+            top: 30%;
+            right: -30px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(248, 224, 142, 0.08));
+            animation-delay: -7s;
+        }
+        
+        .shape-4 {
+            width: 120px;
+            height: 120px;
+            bottom: 20%;
+            left: -20px;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), rgba(248, 224, 142, 0.08));
+            animation-delay: -10s;
+        }
+
+        @keyframes morphShape {
+            0%, 100% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+            25% {
+                border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+            }
+            50% {
+                border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+            }
+            75% {
+                border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="certificate" id="certificate">
+            <div class="border-pattern"></div>
+            <div class="watermark">AIDDATA</div>
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            
+            <div class="header">
+                <img src="img/logodark.png" alt="AidData Logo" class="logo">
+                <h1 class="certificate-title">Certificate of Completion</h1>
+                <div class="certificate-subtitle">Securing Development Funding Simulation</div>
+            </div>
+            
+            <div class="recipient-section">
+                <div class="recipient-title">Presented to</div>
+                <div class="recipient-name" id="recipient-name">John Doe</div>
+                <div class="certificate-id" id="certificate-id">AID-2025-06-27204</div>
+            </div>
+            
+            <div class="certificate-text">
+                For successfully completing the <span id="course-name">Securing Development Funding</span> simulation, demonstrating proficiency in analyzing financing packages and strategic decision-making for development projects.
+            </div>
+            
+            <div class="completion-date">
+                Completed on <span id="completion-date">April 6, 2025</span>
+            </div>
+            
+            <div class="certificate-footer">
+                This certificate verifies completion of an AidData professional development program. 
+                AidData is a research lab at William & Mary that uses data and rigorous methods to create policy-relevant analysis.
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="input-group">
+                <span class="input-label">Recipient Name:</span>
+                <input type="text" id="name-input" placeholder="Enter recipient name">
+            </div>
+            
+            <div class="input-group">
+                <span class="input-label">Completion Date:</span>
+                <input type="date" id="date-input">
+            </div>
+            
+            <button id="update-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.99 6.57 2.57L21 8M21 3v5h-5"/>
+                </svg>
+                Update Certificate
+            </button>
+            <button id="print-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+                    <path d="M6 14h12v8H6z"/>
+                </svg>
+                Print Certificate
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const recipientName = urlParams.get('name');
+            const courseName = urlParams.get('course');
+            const completionDate = urlParams.get('date');
+            const certificateId = urlParams.get('id');
+            const format = urlParams.get('format');
+
+            console.log('Certificate parameters:', { recipientName, courseName, completionDate, certificateId, format }); // Debug log
+
+            // Auto-fill the certificate if parameters are provided
+            if (recipientName && courseName && completionDate && certificateId) {
+                document.getElementById('recipient-name').textContent = recipientName;
+                document.getElementById('course-name').textContent = courseName;
+                document.getElementById('completion-date').textContent = completionDate;
+                document.getElementById('certificate-id').textContent = certificateId;
+                
+                // Hide the input controls since this is a generated certificate
+                document.querySelector('.controls').style.display = 'none';
+                
+                // Generate PDF if format parameter is present
+                if (format === 'pdf') {
+                    // Wait for fonts and images to load
+                    window.addEventListener('load', function() {
+                        setTimeout(() => {
+                            generatePDF();
+                        }, 1000);
+                    });
+                }
+            } else {
+                // Set default date to current date for manual certificate creation
+                const today = new Date();
+                const dateString = today.toISOString().substr(0, 10);
+                document.getElementById('date-input').value = dateString;
+                
+                // Generate random certificate ID
+                generateCertificateId();
+            }
+            
+            // Update button event listener
+            document.getElementById('update-btn').addEventListener('click', updateCertificate);
+            
+            // Print button event listener
+            document.getElementById('print-btn').addEventListener('click', generatePDF);
+        });
+        
+        function updateCertificate() {
+            // Get input values
+            const name = document.getElementById('name-input').value || 'John Doe';
+            
+            // Get date input and format it
+            const dateInput = document.getElementById('date-input').value;
+            let formattedDate;
+            
+            if (dateInput) {
+                const dateObj = new Date(dateInput);
+                formattedDate = dateObj.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            } else {
+                formattedDate = 'April 6, 2025';
+            }
+            
+            // Update certificate
+            document.getElementById('recipient-name').textContent = name;
+            document.getElementById('completion-date').textContent = formattedDate;
+            
+            // Generate a new certificate ID
+            generateCertificateId();
+        }
+        
+        function generateCertificateId() {
+            const prefix = 'AID';
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const randomNum = Math.floor(10000 + Math.random() * 90000);
+            
+            const certId = `${prefix}-${year}-${month}-${randomNum}`;
+            document.getElementById('certificate-id').textContent = certId;
+        }
+        
+        function generatePDF() {
+            // Get the certificate element
+            const certificate = document.getElementById('certificate');
+            
+            // Get recipient name for the filename
+            const recipientName = document.getElementById('recipient-name').textContent;
+            // Create a filename-safe version of the name (replace spaces with underscores and remove special characters)
+            const safeRecipientName = recipientName.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            // Update the certificate date to current date if it's still the default
+            if (document.getElementById('completion-date').textContent === 'April 6, 2025') {
+                const today = new Date();
+                const formattedDate = today.toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                document.getElementById('completion-date').textContent = formattedDate;
+            }
+            
+            // Ensure certificate ID is updated
+            if (document.getElementById('certificate-id').textContent.includes('2025-04')) {
+                generateCertificateId();
+            }
+            
+            console.log('Generating PDF for:', safeRecipientName); // Debug log
+            
+            // Configure PDF options
+            const opt = {
+                margin: [10, 0, 10, 0], // Adjusted margins [top, right, bottom, left]
+                filename: `AidData_Certificate_${safeRecipientName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 3,
+                    useCORS: true,
+                    letterRendering: true,
+                    logging: true, // Enable logging for debugging
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'landscape',
+                    compress: true,
+                    precision: 16
+                }
+            };
+
+            // Remove any existing transforms during PDF generation
+            const originalTransform = certificate.style.transform;
+            certificate.style.transform = 'none';
+
+            // Generate PDF
+            html2pdf().set(opt).from(certificate).save().then(() => {
+                // Restore original transform after PDF generation
+                certificate.style.transform = originalTransform;
+                console.log('PDF generation completed'); // Debug log
+            }).catch(error => {
+                console.error('PDF generation error:', error); // Error logging
+            });
+        }
+    </script>
+</body>
+</html>

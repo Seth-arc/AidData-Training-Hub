@@ -1,0 +1,40 @@
+/*
+Theme Name: thehub
+Author: AidData Training
+Template: twentytwentfour
+Description: A custom theme for the AidData Training Hub.
+Version: 1.0
+*/
+.llms-lesson-after {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.llms-lesson-gate {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e5e5;
+}
+
+.llms-lesson-nav {
+  margin-top: 2rem;
+}
+
+.llms-certificate-cta {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e5e5;
+}
+
+body.llms-lesson .llms-lesson-after {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+body.llms-lesson .llms-lesson-gate {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e5e5;
+}

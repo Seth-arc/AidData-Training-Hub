@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>The Port Evaluation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    :root {
+      --bg: #0a0f1e;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #10b981;
+      --dim: #1a1f2e;
+    }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      position: fixed;
+      width: 100%;
+      touch-action: pan-y;
+    }
+    
+    /* Progress bar */
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.05);
+      z-index: 100;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Score indicator */
+    .score {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      z-index: 100;
+    }
+    .score.show {
+      opacity: 1;
+    }
+    
+    /* Main container */
+    .screen {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      position: relative;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                  transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .screen.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .screen.exit-left {
+      animation: slideOutLeft 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    .screen.exit-right {
+      animation: slideOutRight 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    
+    @keyframes slideOutLeft {
+      to {
+        opacity: 0;
+        transform: translateX(-100px) scale(0.9);
+      }
+    }
+    @keyframes slideOutRight {
+      to {
+        opacity: 0;
+        transform: translateX(100px) scale(0.9);
+      }
+    }
+    
+    .content {
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    /* Typography */
+    .chapter {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+    }
+    
+    .title {
+      font-size: clamp(28px, 6vw, 56px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+    }
+    
+    .text {
+      font-size: clamp(18px, 3vw, 22px);
+      line-height: 1.6;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
+    }
+    
+    .message {
+      background: var(--dim);
+      border-radius: 20px;
+      padding: 32px;
+      text-align: left;
+      border: 1px solid rgba(255,255,255,0.05);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+    }
+    
+    .message-from {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    
+    .message-text {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    
+    .question {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      line-height: 1.3;
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards;
+    }
+    
+    /* Choices */
+    .choice {
+      background: var(--dim);
+      border: 2px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    .choice:nth-child(1) { animation-delay: 0.5s; }
+    .choice:nth-child(2) { animation-delay: 0.6s; }
+    .choice:nth-child(3) { animation-delay: 0.7s; }
+    
+    .choice:hover {
+      border-color: var(--accent);
+      transform: scale(1.02);
+      background: rgba(16, 185, 129, 0.05);
+    }
+    
+    .choice:active {
+      transform: scale(0.98);
+    }
+    
+    .choice-label {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .choice-hint {
+      font-size: 14px;
+      color: var(--muted);
+      font-style: italic;
+    }
+    
+    /* Feedback */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      padding: 10px 20px;
+      border-radius: 999px;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: scaleIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s forwards;
+    }
+    .badge.strong {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+    .badge.weak {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border: 2px solid #ef4444;
+    }
+    .badge.moderate {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+      border: 2px solid #f59e0b;
+    }
+    
+    .signal-display {
+      font-size: 72px;
+      font-weight: 900;
+      margin: 32px 0;
+      opacity: 0;
+      animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.5s forwards;
+    }
+    .signal-display.positive {
+      color: var(--accent);
+    }
+    .signal-display.negative {
+      color: #ef4444;
+    }
+    
+    .feedback-text {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeInUp 1s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
+    }
+    
+    /* Report */
+    .report-score {
+      font-size: clamp(80px, 15vw, 120px);
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      margin: 40px 0;
+      opacity: 0;
+      animation: scaleIn 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.4s forwards;
+    }
+    
+    .report-label {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      opacity: 0;
+      animation: fadeIn 1s ease 0.8s forwards;
+    }
+    
+    /* Next indicator */
+    .next-indicator {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      animation: fadeInBounce 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.2s forwards;
+      z-index: 50;
+    }
+    
+    .next-btn {
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      padding: 16px 40px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .next-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    }
+    
+    .next-btn:active {
+      transform: translateY(0);
+    }
+    
+    .arrow {
+      font-size: 18px;
+      animation: bounceRight 1s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    @keyframes fadeInBounce {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+    
+    @keyframes bounceRight {
+      0%, 100% {
+        transform: translateX(0);
+      }
+      50% {
+        transform: translateX(6px);
+      }
+    }
+    
+    /* Swipe hint */
+    .swipe-hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      opacity: 0;
+      animation: fadeIn 1s ease 1.5s forwards;
+    }
+    
+    /* Hide content initially */
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="progress">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  
+  <div class="score" id="scoreDisplay">0</div>
+  
+  <div id="app"></div>
+  
+  <div class="next-indicator hidden" id="nextIndicator">
+    <button class="next-btn" id="nextBtn">
+      <span id="nextLabel">Begin</span>
+      <span class="arrow">→</span>
+    </button>
+  </div>
+
+  <script>
+    const BEATS = [
+      // Intro
+      { type: 'title', chapter: 'Chapter 1', text: 'Monday Morning' },
+      { type: 'text', text: 'You arrive at the office to find an urgent email waiting.' },
+      { type: 'text', text: 'A major donor wants to evaluate the economic impact of a port expansion in Southeast Asia.' },
+      { type: 'text', text: "They're excited about using satellite technology." },
+      { 
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "Can you take the lead on scoping this? The donor is enthusiastic about satellite methods. But I need you to honestly assess whether geospatial impact evaluation actually fits this question before we commit."
+      },
+      {
+        type: 'question',
+        text: 'Do you confirm that GIE is the right approach?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Yes — the port is fixed in space, economic activity is visible from orbit, and we have good imagery coverage.',
+            hint: 'Methodologically sound',
+            delta: 2,
+            badge: 'strong',
+            why: 'GIE works when treatment is geospatially fixed, outcomes are observable from orbit, and temporal coverage exists. All conditions are met. This is responsible scoping.'
+          },
+          {
+            label: "Yes, with caveats — satellites miss informal activity and unpaid labor. Let's discuss limitations with the donor.",
+            hint: 'Honest about constraints',
+            delta: 1,
+            badge: 'moderate',
+            why: 'Acknowledging limitations shows integrity. These concerns should shape interpretation, not stop the project entirely.'
+          },
+          {
+            label: 'No — this is buzzword-chasing. Traditional surveys would be more appropriate. We should decline.',
+            hint: 'Risky pushback',
+            delta: -1,
+            badge: 'weak',
+            why: 'Outright rejection without exploring feasibility can damage relationships and close doors. Better to engage thoughtfully.'
+          }
+        ]
+      },
+      
+      // Chapter 2
+      { type: 'title', chapter: 'Chapter 2', text: 'Two Weeks Later' },
+      { type: 'text', text: "You're deep in data exploration." },
+      { type: 'text', text: 'The choices you make about data quality now will echo through every analysis that follows.' },
+      {
+        type: 'message',
+        from: 'Dr. Lisa Park, Geospatial Analyst',
+        text: "VIIRS nighttime lights for recent years look good, but historical DMSP has saturation issues. High-res optical from Planet is great, but there are cloud gaps during monsoon season. How do you want to handle this?"
+      },
+      {
+        type: 'question',
+        text: 'How do you ensure data integrity?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Cross-validate multiple products, build harmonization pipelines, document sensor drift, report uncertainty bands.',
+            hint: 'Rigorous and transparent',
+            delta: 2,
+            badge: 'strong',
+            why: 'Multiple products protect against sensor artifacts. Harmonization and uncertainty quantification are the gold standard. This takes longer but produces defensible results.'
+          },
+          {
+            label: "Use single product (VIIRS only) without cross-validation. It's widely used and good enough for policy.",
+            hint: 'Expedient but risky',
+            delta: -1,
+            badge: 'weak',
+            why: "Single-source reliance hides artifacts. Without cross-validation, stakeholders can't assess robustness. You're accepting hidden vulnerabilities."
+          },
+          {
+            label: 'Outsource to a commercial vendor\'s black-box "prosperity index" without examining methodology.',
+            hint: 'Opaque and dangerous',
+            delta: -2,
+            badge: 'weak',
+            why: 'Black-box indices obscure error propagation. If the vendor changes methods, your time-series breaks. This is professionally irresponsible.'
+          }
+        ]
+      },
+      
+      // Chapter 3
+      { type: 'title', chapter: 'Chapter 3', text: 'Late Evening' },
+      { type: 'text', text: 'The lab is quiet. Your coffee is cold.' },
+      { type: 'text', text: "You're staring at nighttime lights time-series data, trying to separate signal from noise." },
+      {
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "This isn't just about correlations. We need an outcome that actually represents economic activity in a defensible way. What's your approach?"
+      },
+      {
+        type: 'question',
+        text: 'How do you construct the outcome variable?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Filter for stable lights, combine with building footprints, normalize by baseline to control for regional variance.',
+            hint: 'Balanced composite',
+            delta: 2,
+            badge: 'strong',
+            why: 'Stable-light filtering reduces noise. Building footprints add structural dimension. Baseline normalization controls for pre-existing differences. Defensible and interpretable.'
+          },
+          {
+            label: 'Use raw, unfiltered luminosity totals without normalization or additional spatial features.',
+            hint: 'Oversimplified',
+            delta: -1,
+            badge: 'weak',
+            why: "Raw totals carry noise and conflate growth with baseline differences. Stakeholders will question whether you're measuring signal or noise."
+          },
+          {
+            label: 'Blend lights, vegetation, and temperature into an index without theoretical justification.',
+            hint: 'Conceptually murky',
+            delta: -1,
+            badge: 'weak',
+            why: 'Mixing unrelated variables without causal logic creates interpretation problems. Why would vegetation matter for port impact?'
+          }
+        ]
+      },
+      
+      // Chapter 4
+      { type: 'title', chapter: 'Chapter 4', text: 'Friday Morning' },
+      { type: 'text', text: 'Team meeting.' },
+      { type: 'text', text: 'The methodologist leans forward and asks the critical question:' },
+      { type: 'text', text: "How do you isolate the port's effect from everything else happening in the region?" },
+      {
+        type: 'message',
+        from: 'James Rodriguez, Senior Methodologist',
+        text: "The region was already industrializing. National GDP was growing. Other infrastructure investments were happening. How do we isolate the port's specific contribution?"
+      },
+      {
+        type: 'question',
+        text: 'Which identification strategy do you choose?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Difference-in-differences with matched controls: Compare treated areas to similar control areas, pre-post.',
+            hint: 'Classic quasi-experimental',
+            delta: 2,
+            badge: 'strong',
+            why: 'DiD with matching leverages parallel trends. If matches are defensible and pre-trends validate, this provides transparent causal estimates.'
+          },
+          {
+            label: "Synthetic control: Construct weighted combination of controls that mimics treated area's pre-intervention trajectory.",
+            hint: 'Sophisticated but demanding',
+            delta: 1,
+            badge: 'moderate',
+            why: 'Powerful when pre-period fit is strong. But sensitive to control selection. Requires extensive validation through placebo tests.'
+          },
+          {
+            label: 'Simple before-after: Compare treated area to itself, pre vs post, with no control group.',
+            hint: 'Fundamentally flawed',
+            delta: -2,
+            badge: 'weak',
+            why: 'Cannot distinguish port effects from confounding trends. Any regional change gets attributed to the port. Results are uninterpretable.'
+          }
+        ]
+      },
+      
+      // Chapter 5
+      { type: 'title', chapter: 'Chapter 5', text: 'Analysis Phase' },
+      { type: 'text', text: 'Something catches your eye in the spatial patterns.' },
+      { type: 'text', text: 'Economic effects seem to be spreading beyond the immediate port area.' },
+      {
+        type: 'message',
+        from: 'Dr. Lisa Park, Geospatial Analyst',
+        text: "Districts 25-50km from the port are showing growth too. If our 'control' areas are actually benefiting through labor markets, our estimates will be biased."
+      },
+      {
+        type: 'question',
+        text: 'How do you handle spatial spillovers?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Distance-gradient analysis: Estimate effects at multiple distance bands, test for null effects far from port.',
+            hint: 'Structured spatial approach',
+            delta: 2,
+            badge: 'strong',
+            why: "Distance gradients trace effect decay. If distant bands show zero impact, you've ruled out contamination. This transforms a threat into evidence."
+          },
+          {
+            label: 'Acknowledge spillovers in limitations but proceed with standard analysis, assuming effects are localized.',
+            hint: 'Partial acknowledgment',
+            delta: 0,
+            badge: 'moderate',
+            why: "Better than ignoring, but if spillovers are substantial, estimates will be biased and you won't know by how much."
+          },
+          {
+            label: 'Ignore spillovers: Claim influence is hyper-local and dismiss spatial interactions as too complex.',
+            hint: 'Denial of reality',
+            delta: -2,
+            badge: 'weak',
+            why: "Dismissing spatial interactions undermines causal claims. Reviewers will immediately flag this. You're knowingly publishing biased estimates."
+          }
+        ]
+      },
+      
+      // Chapter 6
+      { type: 'title', chapter: 'Chapter 6', text: 'The Integrity Test' },
+      { type: 'text', text: "You're about to start the analysis." },
+      { type: 'text', text: 'With flexible data and multiple modeling choices, the temptation to p-hack is real.' },
+      { type: 'text', text: 'Your supervisor wants safeguards in place.' },
+      {
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "Before we run anything, we need to lock down our analysis plan. How are we protecting against specification searching?"
+      },
+      {
+        type: 'question',
+        text: 'What rigor protocol do you implement?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Full pre-registration: Document design, outcomes, and robustness checks publicly on OSF before analyzing.',
+            hint: 'Maximum transparency',
+            delta: 2,
+            badge: 'strong',
+            why: "Pre-registration prevents cherry-picking and signals credibility. It constrains flexibility, but that's precisely the point. This is the integrity standard."
+          },
+          {
+            label: 'Internal documentation: Timestamped email to supervisor with analysis plan, but not public.',
+            hint: 'Moderate accountability',
+            delta: 1,
+            badge: 'moderate',
+            why: 'Better than nothing. Protects against worst p-hacking. But lacks public transparency that external audiences value.'
+          },
+          {
+            label: 'Run exploratory analysis first, then write a plan that matches what worked. Keep language vague.',
+            hint: 'Pseudo-rigor',
+            delta: -2,
+            badge: 'weak',
+            why: 'Retrofitting after results defeats precommitment purpose. This is p-hacking with extra steps. Professionally indefensible.'
+          }
+        ]
+      },
+      
+      // Chapter 7
+      { type: 'title', chapter: 'Chapter 7', text: 'The Hard Question' },
+      { type: 'text', text: 'Your results show positive aggregate effects.' },
+      { type: 'text', text: 'The donor will be pleased.' },
+      { type: 'text', text: 'But you notice something in the disaggregated data that complicates the story.' },
+      {
+        type: 'message',
+        from: 'Dr. Lisa Park, Geospatial Analyst',
+        text: "Gains are concentrated in high-income urban districts. Rural areas show minimal effects, possibly even displacement. Do we report this?"
+      },
+      {
+        type: 'question',
+        text: 'How do you handle distributional impacts?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Full disaggregation: Report effects by settlement type and wealth. Flag if only affluent areas benefit.',
+            hint: 'Comprehensive equity lens',
+            delta: 2,
+            badge: 'strong',
+            why: "Disaggregation surfaces inequality that aggregates hide. If only wealthy areas benefit, that's critical for policy. This is what rigorous evaluation looks like."
+          },
+{
+  label: "Report aggregates with brief mention of 'potential heterogeneity' in limitations, without testing.",
+  hint: 'Superficial nod',
+  delta: 0,
+  badge: 'moderate',
+  why: 'Better than nothing, but leaves stakeholders guessing about equity. Minimal due diligence.'
+},
+          {
+            label: "Stick to aggregates only. Claim distributional analysis is beyond scope since satellites don't measure income.",
+            hint: 'Missed opportunity',
+            delta: -1,
+            badge: 'weak',
+            why: 'Satellites can proxy wealth and urbanization. Dismissing equity analysis shirks professional responsibility.'
+          }
+        ]
+      },
+      
+      // Final
+      { type: 'title', chapter: 'Final Chapter', text: 'Six Months Later' },
+      { type: 'text', text: "You're reviewing the final draft." },
+      { type: 'text', text: 'The work is done, but one question remains:' },
+      { type: 'text', text: 'What happens next?' },
+      {
+        type: 'message',
+        from: 'Dr. Sarah Chen, Research Director',
+        text: "This is strong work. But what's our recommendation for follow-up? Ground validation? Replication materials? Or do we just ship it and move on?"
+      },
+      {
+        type: 'question',
+        text: 'What do you recommend?'
+      },
+      {
+        type: 'choices',
+        choices: [
+          {
+            label: 'Recommend follow-on: Ground validation, replication materials registration, GeoQuery integration for reusable extraction.',
+            hint: 'Building infrastructure',
+            delta: 2,
+            badge: 'strong',
+            why: "Follow-ons deepen credibility and enable learning. Standardized extraction supports iteration. You're building research infrastructure, not just a report."
+          },
+          {
+            label: 'Declare results final and discourage replication to protect the narrative.',
+            hint: 'Short-term thinking',
+            delta: -2,
+            badge: 'weak',
+            why: 'Discouraging replication is antithetical to science. Signals insecurity about methods. Actively harms research credibility.'
+          },
+          {
+            label: "No next steps needed. We used satellites, so it's already modern enough.",
+            hint: 'Complacency',
+            delta: -1,
+            badge: 'weak',
+            why: 'Technology ≠ rigor. There are always improvements possible. Declaring premature victory limits learning.'
+          }
+        ]
+      },
+      
+      // Report
+      { type: 'title', chapter: 'Journey Complete', text: 'Your Signal Score' },
+      { type: 'report' }
+    ];
+
+    let currentBeat = 0;
+    let score = 0;
+    let decisionCount = 0;
+    const totalDecisions = 7;
+    let selectedChoices = [];
+    let awaitingChoice = false;
+
+    function updateProgress() {
+      const progress = (decisionCount / totalDecisions) * 100;
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('scoreDisplay').textContent = score;
+      if (decisionCount > 0) {
+        document.getElementById('scoreDisplay').classList.add('show');
+      }
+    }
+
+    function renderBeat() {
+      const beat = BEATS[currentBeat];
+      const app = document.getElementById('app');
+      const nextIndicator = document.getElementById('nextIndicator');
+      const nextLabel = document.getElementById('nextLabel');
+      
+      // Clear previous
+      app.innerHTML = '';
+      
+      // Create screen
+      const screen = document.createElement('div');
+      screen.className = 'screen';
+      
+      const content = document.createElement('div');
+      content.className = 'content';
+      
+      if (beat.type === 'title') {
+        content.innerHTML = `
+          <div class="chapter">${beat.chapter}</div>
+          <h1 class="title">${beat.text}</h1>
+        `;
+        nextLabel.textContent = 'Continue';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'text') {
+        content.innerHTML = `<p class="text">${beat.text}</p>`;
+        nextLabel.textContent = 'Next';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'message') {
+        content.innerHTML = `
+          <div class="message">
+            <div class="message-from">${beat.from}</div>
+            <div class="message-text">${beat.text}</div>
+          </div>
+        `;
+        nextLabel.textContent = 'Continue';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'question') {
+        content.innerHTML = `<div class="question">${beat.text}</div>`;
+        nextLabel.textContent = 'See Options';
+        nextIndicator.classList.remove('hidden');
+      }
+      else if (beat.type === 'choices') {
+        awaitingChoice = true;
+        beat.choices.forEach((choice, idx) => {
+          const choiceEl = document.createElement('div');
+          choiceEl.className = 'choice';
+          choiceEl.innerHTML = `
+            <div class="choice-label">${choice.label}</div>
+            <div class="choice-hint">${choice.hint}</div>
+          `;
+          choiceEl.onclick = () => selectChoice(idx, beat.choices);
+          content.appendChild(choiceEl);
+        });
+        nextIndicator.classList.add('hidden');
+      }
+      else if (beat.type === 'report') {
+        content.innerHTML = `
+          <div class="report-score">${score}</div>
+          <div class="report-label">Decision Quality Signal</div>
+        `;
+        nextLabel.textContent = 'Restart Journey';
+        nextIndicator.classList.remove('hidden');
+      }
+      
+      screen.appendChild(content);
+      app.appendChild(screen);
+      
+      // Trigger animation
+      setTimeout(() => screen.classList.add('active'), 50);
+    }
+
+    function selectChoice(idx, choices) {
+      if (!awaitingChoice) return;
+      awaitingChoice = false;
+      
+      const choice = choices[idx];
+      score += choice.delta;
+      decisionCount++;
+      selectedChoices.push(choice);
+      updateProgress();
+      
+      // Disable other choices
+      const choiceEls = document.querySelectorAll('.choice');
+      choiceEls.forEach((el, i) => {
+        if (i !== idx) {
+          el.style.opacity = '0.3';
+          el.style.pointerEvents = 'none';
+        }
+      });
+      
+      // Show feedback, then advance once the player continues
+      setTimeout(() => {
+        const app = document.getElementById('app');
+        const screen = document.querySelector('.screen');
+        if (screen) screen.classList.add('exit-left');
+        
+        setTimeout(() => {
+          app.innerHTML = '';
+          
+          const feedbackScreen = document.createElement('div');
+          feedbackScreen.className = 'screen';
+          
+          const content = document.createElement('div');
+          content.className = 'content';
+          
+          const signalClass = choice.delta >= 0 ? 'positive' : 'negative';
+          const signalText = choice.delta >= 0 ? `+${choice.delta}` : choice.delta;
+          
+          content.innerHTML = `
+            <div class="badge ${choice.badge}">${choice.badge} decision</div>
+            <div class="signal-display ${signalClass}">${signalText}</div>
+            <p class="feedback-text">${choice.why}</p>
+          `;
+          
+          feedbackScreen.appendChild(content);
+          app.appendChild(feedbackScreen);
+          
+          setTimeout(() => feedbackScreen.classList.add('active'), 50);
+          
+          document.getElementById('nextLabel').textContent = 'Continue';
+          document.getElementById('nextIndicator').classList.remove('hidden');
+        }, 600);
+      }, 800);
+    }
+
+    function nextBeat() {
+      const screen = document.querySelector('.screen');
+      if (!screen) return;
+      
+      screen.classList.add('exit-left');
+      document.getElementById('nextIndicator').classList.add('hidden');
+      
+      setTimeout(() => {
+        currentBeat++;
+        if (currentBeat >= BEATS.length) {
+          // Restart
+          currentBeat = 0;
+          score = 0;
+          decisionCount = 0;
+          selectedChoices = [];
+          updateProgress();
+        }
+        renderBeat();
+      }, 600);
+    }
+
+    document.getElementById('nextBtn').onclick = nextBeat;
+    
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        if (!awaitingChoice && !document.getElementById('nextIndicator').classList.contains('hidden')) {
+          nextBeat();
+        }
+      }
+    });
+    
+    // Touch swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchStartX - touchEndX > 50) {
+        // Swipe left
+        if (!awaitingChoice && !document.getElementById('nextIndicator').classList.contains('hidden')) {
+          nextBeat();
+        }
+      }
+    });
+
+    updateProgress();
+    renderBeat();
+  </script>
+</body>
+</html>
