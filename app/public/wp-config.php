@@ -20,17 +20,22 @@
  */
 
 // ** Database settings - You can get this info from your web host ** //
+$env = static function ($key, $default = null) {
+    $value = getenv($key);
+    return ($value !== false && $value !== '') ? $value : $default;
+};
+
 /** The name of the database for WordPress */
-define( 'DB_NAME', 'local' );
+define( 'DB_NAME', $env( 'DB_NAME', 'local' ) );
 
 /** Database username */
-define( 'DB_USER', 'root' );
+define( 'DB_USER', $env( 'DB_USER', 'root' ) );
 
 /** Database password */
-define( 'DB_PASSWORD', 'root' );
+define( 'DB_PASSWORD', $env( 'DB_PASSWORD', 'root' ) );
 
 /** Database hostname */
-define( 'DB_HOST', 'localhost' );
+define( 'DB_HOST', $env( 'DB_HOST', 'localhost' ) );
 
 /** Database charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8' );
@@ -48,6 +53,12 @@ ini_set('max_execution_time', 300);
 // HTTP API timeout settings
 define('WP_HTTP_BLOCK_EXTERNAL', false);
 define('WP_ACCESSIBLE_HOSTS', '*.wordpress.org,*.github.com,*.aiddata.org,*.wm.edu');
+
+$wp_home = $env( 'WP_HOME', 'http://localhost:10016' );
+define( 'WP_HOME', $wp_home );
+define( 'WP_SITEURL', $env( 'WP_SITEURL', $wp_home ) );
+
+define( 'WP_ENVIRONMENT_TYPE', $env( 'WP_ENVIRONMENT_TYPE', 'local' ) );
 
 // Disable SSL verification for local development
 // add_filter('https_ssl_verify', '__return_false');
@@ -84,15 +95,23 @@ if (defined('WP_ENVIRONMENT_TYPE') && WP_ENVIRONMENT_TYPE === 'local') {
     define('AUTOMATIC_UPDATER_DISABLED', true);
     define('WP_AUTO_UPDATE_CORE', false);
 
-    // Disable cron for external requests
-    define('DISABLE_WP_CRON', true);
+    // Disable cron for external requests is handled via env config above.
 }
 
 // Enable WordPress debugging for memory issues
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
-define('WP_DEBUG_DISPLAY', false);
-define('SCRIPT_DEBUG', true);
+$debug_enabled = filter_var( $env( 'WP_DEBUG', 'true' ), FILTER_VALIDATE_BOOLEAN );
+define( 'WP_DEBUG', $debug_enabled );
+define( 'WP_DEBUG_LOG', filter_var( $env( 'WP_DEBUG_LOG', 'true' ), FILTER_VALIDATE_BOOLEAN ) );
+define( 'WP_DEBUG_DISPLAY', filter_var( $env( 'WP_DEBUG_DISPLAY', 'false' ), FILTER_VALIDATE_BOOLEAN ) );
+define( 'SCRIPT_DEBUG', $debug_enabled );
+
+define(
+    'DISABLE_WP_CRON',
+    filter_var(
+        $env( 'DISABLE_WP_CRON', WP_ENVIRONMENT_TYPE === 'local' ? 'true' : 'false' ),
+        FILTER_VALIDATE_BOOLEAN
+    )
+);
 
 // Memory debugging
 define('WP_MEMORY_LIMIT', '512M');
@@ -124,9 +143,6 @@ define( 'WP_CACHE_KEY_SALT', '/X5|LbgC`$z~cn)x8Z0/PokYQ_ Y-3<I&EaY@<t}E_C/X#kq=D
 
 /**
  * WordPress database table prefix.
- *
- * You can have multiple installations in one database if you give each
- * a unique prefix. Only numbers, letters, and underscores please!
  */
 $table_prefix = 'wp_';
 
@@ -148,10 +164,8 @@ $table_prefix = 'wp_';
  * @link https://wordpress.org/support/article/debugging-in-wordpress/
  */
 if ( ! defined( 'WP_DEBUG' ) ) {
-	define( 'WP_DEBUG', false );
+    define( 'WP_DEBUG', false );
 }
-
-define( 'WP_ENVIRONMENT_TYPE', 'local' );
 /* That's all, stop editing! Happy publishing. */
 
 /** Absolute path to the WordPress directory. */
